@@ -12,7 +12,7 @@ class PixelShuffle(keras.layers.Layer):
     
     def call(self, inputs: tf.Tensor, **kwargs) -> tf.Tensor:
         assert inputs.shape.ndims == 4, "inputs must be 4D tensor"
-        # assert inputs.shape[-1] % (self.upsample_factor ** 2) == 0, "input channel must be divisible by upsample_factor ** 2"
+        assert inputs.shape[-1] % (self.upsample_factor ** 2) == 0, "input channel must be divisible by upsample_factor ** 2"
 
         out = tf.nn.depth_to_space(inputs, self.upsample_factor)
 
@@ -28,7 +28,7 @@ class PixelShuffle(keras.layers.Layer):
         return cls(**config)
 
 if __name__ == "__main__":
-    x = tf.random.normal([1, 32, 32, 12])
+    x = tf.random.normal([1, 32, 32, 512])
     
     ps = PixelShuffle(2)
     

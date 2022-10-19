@@ -8,7 +8,10 @@ import tensorflow as tf
 from tensorflow import keras
 from keras.layers import Layer, Conv2D
 
-from tlc_avgpool import TlcAvgPool2D
+try:
+    from tlc_avgpool import TlcAvgPool2D
+except:
+    from layers.tlc_avgpool import TlcAvgPool2D
 
 class SimplifiedChannelAttention(Layer):
     def __init__(self, filters: int, kw: int, kh: int) -> None:

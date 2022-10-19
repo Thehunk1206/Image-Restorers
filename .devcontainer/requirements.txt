@@ -4,3 +4,4 @@ scipy
 opencv-contrib-python
 tensorflow_addons
 matplotlib
+model_profiler

@@ -6,13 +6,16 @@ from typing import List, Tuple, Union
 
 import tensorflow as tf
 from tensorflow import keras
-from keras.layers import LayerNormalization, Conv2D, DepthwiseConv2D, Dense, Dropout
+from keras.layers import Layer, LayerNormalization, Conv2D, DepthwiseConv2D, Dense, Dropout
 
+try:
+    from simple_gate import SimpleGate
+    from simplified_channel_attention import SimplifiedChannelAttention
+except:
+    from layers.simple_gate import SimpleGate
+    from layers.simplified_channel_attention import SimplifiedChannelAttention
 
-from simple_gate import SimpleGate
-from simplified_channel_attention import SimplifiedChannelAttention
-
-class NAFBlock(keras.layers.Layer):
+class NAFBlock(Layer):
     def __init__(
         self,
         filters              : int,
@@ -29,8 +32,10 @@ class NAFBlock(keras.layers.Layer):
         self.dropout_rate         = dropout_rate
         self.kw                   = kw
         self.kh                   = kh
-        self.depth_wise_filters   = self.filters * depth_wise_expansion
-        self.ffn_filters          = self.filters * ffn_expansion
+        self.depth_wise_expansion = depth_wise_expansion
+        self.ffn_expansion        = ffn_expansion
+        self.depth_wise_filters   = self.filters * self.depth_wise_expansion
+        self.ffn_filters          = self.filters * self.ffn_expansion
 
         self.spatial_block        = keras.Sequential([
                                         LayerNormalization(),
@@ -79,18 +84,28 @@ class NAFBlock(keras.layers.Layer):
 
         self.dropout_2           = Dropout(self.dropout_rate)
 
+        self.beta                = self.add_weight(
+                                        name='beta',
+                                        shape=(1, 1, 1, self.filters),
+                                        initializer='zeros',
+                                        trainable=True,
+                                        dtype=tf.float32
+                                    )
+        self.gamma               = self.add_weight(
+                                        name='gamma',
+                                        shape=(1, 1, 1, self.filters),
+                                        initializer='zeros',
+                                        trainable=True,
+                                        dtype=tf.float32
+        )
+
     def call(self, inputs: tf.Tensor, **kwargs):
         assert inputs.shape.ndims == 4, "inputs must be 4D tensor"
         
-        x = self.spatial_block(inputs)
-        x = self.dropout_1(x)
-        x = x + inputs
+        x = self.dropout_1(self.spatial_block(inputs)) * self.beta + inputs
+        x = self.dropout_2(self.channel_block(x)) * self.gamma + x
 
-        y = self.channel_block(x)
-        y = self.dropout_2(y)
-        y = y + x
-
-        return y
+        return x
     
     def get_config(self):
         config = super(NAFBlock, self).get_config()
@@ -114,5 +129,3 @@ if __name__ == "__main__":
 
     y = naf(x)
     print(y.shape)
-
-

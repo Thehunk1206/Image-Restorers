@@ -6,7 +6,10 @@ from typing import List, Tuple, Union
 import tensorflow as tf
 from tensorflow import keras
 
-from edge_padding2D import EdgePadding2D
+try:
+    from edge_padding2D import EdgePadding2D
+except:
+    from layers.edge_padding2D import EdgePadding2D
 
 class TlcAvgPool2D(keras.layers.Layer):
     def __init__(
