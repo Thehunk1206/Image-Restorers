@@ -48,6 +48,7 @@ class NAFBlock(Layer):
         kh                   : int,
         depth_wise_expansion : int = 2,
         ffn_expansion        : int = 2,
+        local_agg            : bool = False,
         **kwargs
     ) -> None:
         super(NAFBlock, self).__init__(**kwargs)
@@ -58,6 +59,7 @@ class NAFBlock(Layer):
         self.kh                   = kh
         self.depth_wise_expansion = depth_wise_expansion
         self.ffn_expansion        = ffn_expansion
+        self.local_agg            = local_agg
         self.depth_wise_filters   = self.filters * self.depth_wise_expansion
         self.ffn_filters          = self.filters * self.ffn_expansion
 
@@ -77,7 +79,7 @@ class NAFBlock(Layer):
                                             activation=None
                                         ),
                                         SimpleGate(),
-                                        SimplifiedChannelAttention(filters= self.filters, kw=self.kw, kh=self.kh),
+                                        SimplifiedChannelAttention(filters= self.filters, kw=self.kw, kh=self.kh, local_agg=self.local_agg),
                                         Conv2D(
                                             filters=self.filters,
                                             kernel_size=1,
@@ -138,7 +140,8 @@ class NAFBlock(Layer):
                         'kw'                  : self.kw, 
                         'kh'                  : self.kh,
                         'depth_wise_expansion': self.depth_wise_expansion,
-                        'ffn_expansion'       : self.ffn_expansion
+                        'ffn_expansion'       : self.ffn_expansion,
+                        'local_agg'           : self.local_agg
                     })
         return config
     

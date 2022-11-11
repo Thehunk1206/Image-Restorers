@@ -64,9 +64,25 @@ class TlcAvgPool2D(keras.layers.Layer):
         inputs              = tf.pad(inputs, [[0,0], [1,0], [1,0], [0,0]])                           # Zero Pad input with 1 pixel on each side
         inputs              = tf.cumsum(tf.cumsum(inputs, axis=2), axis=1)                           # Cumulative sum along h,w. Precompute cumsum to implement submatrix sum
         
-        inputs              = inputs[:, kernel_h:, kernel_w:, :] - inputs[:, kernel_h:, :-kernel_w, :] - inputs[:, :-kernel_h, kernel_w:, :] + inputs[:, :-kernel_h, :-kernel_w, :] # Submatrix sum
-        out                 = inputs / tf.cast(kernel_h * kernel_w, tf.float32)                                         # Average
-        
+        # Submatrix sum
+        s1  = tf.slice(inputs,
+                        [0, 0, 0, 0],
+                        [-1, kernel_h, kernel_w, -1]
+                    )
+        s2  = tf.slice(inputs,
+                        [0, 0, (w - kernel_w)+1, 0],
+                        [-1, kernel_w, -1, -1]
+                    )
+        s3  = tf.slice(inputs,
+                        [0, (h - kernel_h)+1, 0, 0],
+                        [-1, -1, kernel_w, -1]
+                    )
+        s4  = tf.slice(inputs,
+                        [0, (h - kernel_h)+1, (w - kernel_w)+1, 0],
+                        [-1, -1, -1, -1]
+                    )
+        out = (s4 + s1 - s2 - s3) / tf.cast(kernel_h * kernel_w, tf.float32)
+
         _, out_h, out_w, _  = out.shape                                                              # Get output h,w
         pad_h               = [(h - out_h) // 2, (h - out_h + 1) // 2]                               # Get padding h
         pad_w               = [(w - out_w) // 2, (w - out_w + 1) // 2]                               # Get padding w       

@@ -30,7 +30,7 @@ from typing import List, Tuple, Union
 
 import tensorflow as tf
 from tensorflow import keras
-from keras.layers import Layer, Conv2D
+from keras.layers import Layer, Conv2D, GlobalAveragePooling2D
 
 try:
     from tlc_avgpool import TlcAvgPool2D
@@ -38,14 +38,18 @@ except:
     from layers.tlc_avgpool import TlcAvgPool2D
 
 class SimplifiedChannelAttention(Layer):
-    def __init__(self, filters: int, kw: int, kh: int) -> None:
+    def __init__(self, filters: int, kw: int, kh: int, local_agg: bool = True) -> None:
         super(SimplifiedChannelAttention, self).__init__()
 
-        self.filters = filters
-        self.kw = kw
-        self.kh = kh
+        self.filters    = filters
+        self.kw         = kw
+        self.kh         = kh
+        self.local_agg  = local_agg
 
-        self.avg_pool = TlcAvgPool2D([self.kh, self.kw])
+        if self.local_agg:
+            self.avg_pool = TlcAvgPool2D([self.kh, self.kw])
+        else:
+            self.avg_pool = GlobalAveragePooling2D(keepdims=True)
 
         self.conv     = Conv2D(filters=self.filters, kernel_size=1, strides=1, padding='VALID')
 
@@ -61,7 +65,8 @@ class SimplifiedChannelAttention(Layer):
         config = super(SimplifiedChannelAttention, self).get_config()
         config.update({'filters': self.filters, 
                         'kw'    : self.kw, 
-                        'kh'    : self.kh
+                        'kh'    : self.kh,
+                        'local_agg': self.local_agg
                     })
         return config
     
