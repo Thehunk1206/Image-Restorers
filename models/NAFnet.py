@@ -41,8 +41,9 @@ class NAFnet(tf.keras.Model):
         num_middle_blocks: int = 1,
         num_enc_blocks: List[int] = [1, 1, 1, 28],
         num_dec_blocks: List[int] = [1, 1, 1, 1],
-        train_size: List = [None, 256, 256, 3],
+        train_size: List = [256, 256, 3],
         dropout_rate: float = 0.0,
+        local_agg: bool = False,
         tlc_factor: float = 1.5,
         **kwargs
     ) -> None:
@@ -54,9 +55,10 @@ class NAFnet(tf.keras.Model):
         self.num_dec_blocks     = num_dec_blocks
         self.train_size         = train_size
         self.dropout_rate       = dropout_rate
+        self.local_agg          = local_agg
         self.tlc_factor         = tlc_factor
-        kh, kw                  = int(self.train_size[1] * self.tlc_factor), \
-                                    int(self.train_size[2] * self.tlc_factor)
+        kh, kw                  = int(self.train_size[0] * self.tlc_factor), \
+                                    int(self.train_size[1] * self.tlc_factor)
         num_stages              = len(self.num_enc_blocks)
 
         self.rgb_to_features    = Conv2D(
@@ -81,7 +83,7 @@ class NAFnet(tf.keras.Model):
             # NAF blocks
             self.encoders_blks.append(
                 Sequential([
-                    NAFBlock(self.width * (2 ** i), self.dropout_rate, kw//(2 ** i), kh//(2 ** i)) for _ in range(num_blocks)
+                    NAFBlock(self.width * (2 ** i), self.dropout_rate, kw//(2 ** i), kh//(2 ** i), local_agg=self.local_agg) for _ in range(num_blocks)
                 ])
             )
             # Downsample blocks
@@ -97,7 +99,7 @@ class NAFnet(tf.keras.Model):
         
         # Middle blocks
         self.middle_blks = Sequential([
-            NAFBlock(self.width * (2 ** num_stages), self.dropout_rate, kw//(2 ** num_stages), kh//(2 ** num_stages)) for _ in range(self.num_middle_blocks)
+            NAFBlock(self.width * (2 ** num_stages), self.dropout_rate, kw//(2 ** num_stages), kh//(2 ** num_stages), local_agg=self.local_agg) for _ in range(self.num_middle_blocks)
         ])
 
         # Decoder and Upsample blocks
@@ -121,11 +123,14 @@ class NAFnet(tf.keras.Model):
             # NAF blocks
             self.decoders_blks.append(
                 Sequential([
-                    NAFBlock(self.width * (2 ** (num_stages - (i + 1))), self.dropout_rate, kw//(2 ** (num_stages - (i+1))), kh//(2 ** (num_stages - (i+1)))) for _ in range(num_blocks)
+                    NAFBlock(self.width * (2 ** (num_stages - (i + 1))), self.dropout_rate, kw//(2 ** (num_stages - (i+1))), kh//(2 ** (num_stages - (i+1))), local_agg=self.local_agg) for _ in range(num_blocks)
                 ])
             )
-        
-    def call(self,inputs: tf.Tensor, training=True,**kwargs) -> tf.Tensor:
+    
+    def call(self,inputs: tf.Tensor, training=None,**kwargs) -> tf.Tensor:
+
+        if training is None:
+            training = False
         # Encoder
         x = self.rgb_to_features(inputs)
 
@@ -152,30 +157,31 @@ class NAFnet(tf.keras.Model):
     
     def summary(self, **kwargs):
         x = tf.keras.Input(shape=[None,None,3])
-        model = tf.keras.Model(inputs=[x], outputs=self.call(x, training=True))
+        model = tf.keras.Model(inputs=[x], outputs=self.call(x, training=False))
 
         return model.summary(**kwargs)
 
 if __name__ == "__main__":
     from model_profiler import model_profiler
 
-    Batch_size = 32
+    Batch_size = 2
     use_units = ['GPU IDs', 'MFLOPs', 'GB', 'Million', 'MB']
 
-    x = tf.random.normal([1, 256, 256, 3])
+    # x = tf.random.normal([1, 256, 256, 3])
+    x = tf.keras.Input(shape=[None,None,3])
     model = NAFnet(
-        width=16,
+        width=8,
         num_middle_blocks=1,
-        num_enc_blocks=[1, 1, 1, 28],
+        num_enc_blocks=[1, 1, 1, 8],
         num_dec_blocks=[1, 1, 1, 1],
-        train_size=[None, 256, 256, 3],
+        train_size=[256, 256, 3],
         dropout_rate=0.0,
+        local_agg=False,
         tlc_factor=1.5
     )
     model.summary()
 
-    y = model(x, training=False)
-    # print(y.shape)
+    model(x)
 
     profile = model_profiler(model, Batch_size, use_units=use_units)
 
