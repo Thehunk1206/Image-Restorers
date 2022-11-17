@@ -29,13 +29,24 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from keras.models import Model
 
-import importlib
+from archs import NAFnet
+
+_model_names = [
+    'NAFnet',
+]
 
 def get_model(model_name: str, **kwargs) -> Model:
-    model = importlib.import_module(f'{model_name}.{model_name}')
+    x = keras.Input(shape=[None, None, 3])
 
-    model = model(**kwargs)
+    if model_name not in _model_names:
+        raise ValueError(f"Model name should be one of {_model_names}, got {model_name}. \
+                            Develop the model and add it to the list at and import the model at {__file__}.")
 
-    x       = keras.Input(shape=[None, None, 3])
-    model   = Model(inputs=x, outputs=model.call(x, **kwargs))
+    if model_name == 'NAFnet':
+        model = NAFnet(**kwargs)
+    
+    model   = Model(inputs=x, outputs=model.call(x))
     return model
+
+model = get_model('NAFnet', train_size=[256, 256, 3], num_enc_blocks=[1, 1, 1, 28], num_dec_blocks=[1, 1, 1, 1], num_middle_blocks=1, width=16, dropout_rate=0.0, local_agg=False, tlc_factor=1.5)
+model.summary()

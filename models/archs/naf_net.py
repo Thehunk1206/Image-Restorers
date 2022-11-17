@@ -127,6 +127,7 @@ class NAFnet(tf.keras.Model):
                 ])
             )
     
+    @tf.function
     def call(self,inputs: tf.Tensor, training=None,**kwargs) -> tf.Tensor:
 
         if training is None:
@@ -157,7 +158,7 @@ class NAFnet(tf.keras.Model):
     
     def summary(self, **kwargs):
         x = tf.keras.Input(shape=[None,None,3])
-        model = tf.keras.Model(inputs=[x], outputs=self.call(x, training=False))
+        model = tf.keras.Model(inputs=[x], outputs=self.call(x, training=True))
 
         return model.summary(**kwargs)
 

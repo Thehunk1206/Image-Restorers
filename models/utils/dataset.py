@@ -33,7 +33,7 @@ class TfdataPipeline:
     '''
     A class to create a tf.data.Dataset object from a directory of images.
     args:
-        `BASE_DATASET_DIR`: str, the directory of the dataset
+        `dataset_dir`: str, the directory of the dataset
         `target_size`: list, the target size of the images (height, width, channels)
         `batch_size`: int, the batch size of the dataset
         `input_folder_name`: str, the name of the folder containing the input images
@@ -53,7 +53,7 @@ class TfdataPipeline:
         random_jpeg_quality: randomly change the jpeg quality of the images
     
     NOTE: Make your directory structure as follows:
-        BASE_DATASET_DIR
+        dataset_dir
             train
                 input_folder_name
                     image1.jpg
@@ -75,7 +75,7 @@ class TfdataPipeline:
     '''
     def __init__(
         self,
-        BASE_DATASET_DIR: str,
+        dataset_dir: str,
         target_size: list               = [256, 256,3],
         batch_size: int                 = 16,
         input_folder_name: str          = 'blur',
@@ -84,7 +84,7 @@ class TfdataPipeline:
         augmenting_list: list           = ['random_crop', 'flip_left_right', 'flip_up_down', 'random_contrast', 'random_saturation'],
         augment_target_images: bool     = True,
     ) -> None:
-        self.BASE_DATASET_DIR       = BASE_DATASET_DIR
+        self.dataset_dir            = dataset_dir
         self.IMG_H                  = target_size[0]
         self.IMG_W                  = target_size[1]
         self.IMG_C                  = target_size[2]
@@ -97,18 +97,18 @@ class TfdataPipeline:
         self.__dataset_type         = ['train', 'test', 'valid']
         self.random_ng              = tf.random.Generator.from_seed(12, alg='philox')
 
-        if not os.path.exists(self.BASE_DATASET_DIR):
+        if not os.path.exists(self.dataset_dir):
             raise FileNotFoundError(
-                f'The directory {self.BASE_DATASET_DIR} does not exist.'
+                f'The directory {self.dataset_dir} does not exist.'
             )
-        if not os.path.exists(os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[0], self.input_folder_name)) or \
-            not os.path.exists(os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[0], self.target_folder_name)):
+        if not os.path.exists(os.path.join(self.dataset_dir, self.__dataset_type[0], self.input_folder_name)) or \
+            not os.path.exists(os.path.join(self.dataset_dir, self.__dataset_type[0], self.target_folder_name)):
 
             raise FileNotFoundError(
                 f'The directory {self.input_folder_name} or {self.target_folder_name} does not exist in train dataset.'
             )
-        if not os.path.exists(os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[1], self.input_folder_name)) or \
-            not os.path.exists(os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[1], self.target_folder_name)):
+        if not os.path.exists(os.path.join(self.dataset_dir, self.__dataset_type[1], self.input_folder_name)) or \
+            not os.path.exists(os.path.join(self.dataset_dir, self.__dataset_type[1], self.target_folder_name)):
             raise FileNotFoundError(
                 f"The directory {self.input_folder_name} or {self.target_folder_name} does not exist in test dataset."
             )
@@ -119,11 +119,11 @@ class TfdataPipeline:
         '''
         
         input_image_files   = sorted(glob.glob(
-            os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[0], f'{self.input_folder_name}/*')
+            os.path.join(self.dataset_dir, self.__dataset_type[0], f'{self.input_folder_name}/*')
         ))
 
         target_image_files  = sorted(glob.glob(
-            os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[0], f'{self.target_folder_name}/*')
+            os.path.join(self.dataset_dir, self.__dataset_type[0], f'{self.target_folder_name}/*')
         ))
 
         train_input_files    = input_image_files[:int(len(input_image_files) * (1 - self.validation_split))]
@@ -140,11 +140,11 @@ class TfdataPipeline:
         '''
 
         input_image_files   = sorted(glob.glob(
-            os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[1], f'{self.input_folder_name}/*')
+            os.path.join(self.dataset_dir, self.__dataset_type[1], f'{self.input_folder_name}/*')
         ))
 
         target_image_files  = sorted(glob.glob(
-            os.path.join(self.BASE_DATASET_DIR, self.__dataset_type[1], f'{self.target_folder_name}/*')
+            os.path.join(self.dataset_dir, self.__dataset_type[1], f'{self.target_folder_name}/*')
         ))
 
         return input_image_files, target_image_files
@@ -302,7 +302,7 @@ if __name__ == "__main__":
     
     batch_size = 3
     # Test the class
-    tfdataset = TfdataPipeline(BASE_DATASET_DIR='Dataset', batch_size=batch_size)
+    tfdataset = TfdataPipeline(dataset_dir='Dataset', batch_size=batch_size)
 
     ds = tfdataset.data_loader(dataset_type='train', do_augment=True)
     # ds = tfdataset.data_loader(dataset_type='valid', do_augment=True)
