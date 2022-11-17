@@ -43,13 +43,14 @@ class ImageRestorationModel(Model):
         self,
         optimizer: tf.keras.optimizers.Optimizer,
         loss: Sequence[tf.keras.losses.Loss],
-        metrics: Sequence[callable],
+        metrics: dict,
         **kwargs
     ):
         super(ImageRestorationModel, self).compile(**kwargs)
         self.optimizer  = optimizer
         self.loss       = loss
         self.metrics    = metrics
+    
 
     @tf.function
     def train_step(self, inputs:tf.tensor, target:tf.tensor, **kwargs):
@@ -62,5 +63,22 @@ class ImageRestorationModel(Model):
                 loss += loss_fn(target, outputs)
         gradients = tape.gradient(loss, self.restore_model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.restore_model.trainable_variables))
-        self.compiled_metrics.update_state(target, outputs)
-        return {m.name: m.result() for m in self.metrics}
+        
+        metrics = {}
+        for metric_name, metric_fn in self.metrics.items():
+            metrics[metric_name] = metric_fn(target, outputs)
+        return {"loss": loss, **metrics}
+    
+    @tf.function
+    def test_step(self, inputs:tf.tensor, target:tf.tensor, **kwargs):
+        assert inputs.shape == target.shape, "Input and target shapes must be same"
+
+        outputs = self.restore_model(inputs, training=False)
+        loss = 0.0
+        for loss_fn in self.loss:
+            loss += loss_fn(target, outputs)
+        
+        metrics = {}
+        for metric_name, metric_fn in self.metrics.items():
+            metrics[metric_name] = metric_fn(target, outputs)
+        return {"loss": loss, **metrics}
