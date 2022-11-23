@@ -33,9 +33,9 @@ from tensorflow import keras
 from keras.layers import Layer, Conv2D, GlobalAveragePooling2D
 
 try:
-    from tlc_avgpool import TlcAvgPool2D
-except:
     from layers.tlc_avgpool import TlcAvgPool2D
+except:
+    from archs.layers.tlc_avgpool import TlcAvgPool2D
 
 class SimplifiedChannelAttention(Layer):
     def __init__(self, filters: int, kw: int, kh: int, local_agg: bool = True) -> None:

@@ -33,11 +33,11 @@ from tensorflow import keras
 from keras.layers import Layer, LayerNormalization, Conv2D, DepthwiseConv2D, Dense, Dropout
 
 try:
-    from simple_gate import SimpleGate
-    from simplified_channel_attention import SimplifiedChannelAttention
-except:
     from layers.simple_gate import SimpleGate
     from layers.simplified_channel_attention import SimplifiedChannelAttention
+except:
+    from archs.layers.simple_gate import SimpleGate
+    from archs.layers.simplified_channel_attention import SimplifiedChannelAttention
 
 class NAFBlock(Layer):
     def __init__(

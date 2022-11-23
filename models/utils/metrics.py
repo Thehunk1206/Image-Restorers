@@ -24,9 +24,15 @@ SOFTWARE.
 
 import os 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+from typing import Dict, List
 
 import tensorflow as tf
 from tensorflow import keras
+
+'''
+Implement your own metrics here and add them to 
+the metrics dictionary 'METRICS_DICT' below.
+'''
 
 def psnr(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     assert y_true.shape.ndims == 4, f'y_true must be a 4D tensor(batch_size, height, width, channels), got {y_true.shape}'
@@ -41,6 +47,27 @@ def ssim(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     assert y_true.shape == y_pred.shape, f'y_true and y_pred must have the same shape, got {y_true.shape} and {y_pred.shape}'
 
     return tf.image.ssim(y_true, y_pred, max_val=1.0)
+
+METRICS_DICT = {
+    'psnr': psnr,
+    'ssim': ssim
+}
+
+def get_metric_fn(metrics: List[str]) -> Dict[str, callable]:
+    '''
+    Returns a list of metrics functions from the METRICS_DICT
+    '''
+    assert all([isinstance(metric, str) for metric in metrics]), f'All elements of metrics must be a string, got {[type(metric) for metric in metrics]}'
+    
+    if isinstance(metrics, str):
+        metrics = [metrics]
+    
+    metrics_dict = {}
+    for metric in metrics:
+        assert metric in METRICS_DICT.keys(), f'{metric} not found in METRICS_DICT'
+        metrics_dict[metric] = METRICS_DICT[metric]
+        # metrics_dict[] (METRICS_DICT[metric])
+    return metrics_dict
 
 if __name__ == "__main__":
     tf.random.set_seed(23)

@@ -23,62 +23,90 @@ SOFTWARE.
 '''
 
 import os
-from typing import List, Sequence 
+from typing import List, Sequence, Dict
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import tensorflow as tf
-from tensorflow.keras import Model
 
 
-class ImageRestorationModel(Model):
+class ImageRestorationModel(tf.keras.Model):
     def __init__(
         self,
-        restore_model: Model,
+        restore_model: tf.keras.Model,
         **kwargs
     ):
         super(ImageRestorationModel, self).__init__(**kwargs)
+        assert isinstance(restore_model, tf.keras.Model), "restore_model must be a tf.keras.Model"
         self.restore_model = restore_model
-        
+    
     def compile(
         self,
-        optimizer: tf.keras.optimizers.Optimizer,
-        loss: Sequence[tf.keras.losses.Loss],
-        metrics: dict,
+        optimizer: tf.keras.optimizers.Optimizer = None,
+        loss: Dict[str, tf.keras.losses.Loss] = None,
+        metrics_fn: Dict[str, callable] = None,
         **kwargs
     ):
         super(ImageRestorationModel, self).compile(**kwargs)
+        assert isinstance(metrics_fn, dict), f"Metrics_fn args takes dictionary of metrics functions, got {type(metrics_fn)}"
+        assert isinstance(loss, dict), f"Loss args takes dictionary of loss functions, got {type(loss)}"
+        assert isinstance(optimizer, tf.keras.optimizers.Optimizer), f"Optimizer must be a tf.keras.optimizers.Optimizer, got {type(optimizer)}"
+        
+        self.restore_model.compile(optimizer, loss, metrics_fn, **kwargs)
+
         self.optimizer  = optimizer
         self.loss       = loss
-        self.metrics    = metrics
-    
+        self.metrics_fn    = metrics_fn
 
     @tf.function
-    def train_step(self, inputs:tf.tensor, target:tf.tensor, **kwargs):
+    def train_step(self, inputs:tf.Tensor, target:tf.Tensor, **kwargs):
+        '''
+        Forward pass, calculate loss, calculate gradients, update weights
+        args:
+            inputs: 4D tensor of shape (batch_size, height, width, channels)
+            target: 4D tensor of shape (batch_size, height, width, channels)
+        returns:
+            dict of loss and metrics_fn
+        '''
         assert inputs.shape == target.shape, "Input and target shapes must be same"
+        assert self.optimizer is not None, "Optimizer must be defined, use compile() method"
+        assert self.loss is not None, "Loss must be defined, use compile() method"
+        assert self.metrics_fn is not None, "Metrics_fn must be defined, use compile() method"
 
         with tf.GradientTape() as tape:
             outputs = self.restore_model(inputs, training=True)
-            loss = 0.0
-            for loss_fn in self.loss:
-                loss += loss_fn(target, outputs)
-        gradients = tape.gradient(loss, self.restore_model.trainable_variables)
+            loss = {}
+            for loss_name, loss_fn in self.loss.items():
+                loss[loss_name] = loss_fn(target, outputs)
+            total_loss = tf.math.add_n(list(loss.values()))
+        gradients = tape.gradient(total_loss, self.restore_model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.restore_model.trainable_variables))
         
-        metrics = {}
-        for metric_name, metric_fn in self.metrics.items():
-            metrics[metric_name] = metric_fn(target, outputs)
-        return {"loss": loss, **metrics}
+        metrics_dict = {}
+        for metric_name, metric_fn in self.metrics_fn.items():
+            metrics_dict[metric_name] = metric_fn(target, outputs)
+        return {"total_loss": total_loss, **loss,  **metrics_dict}
     
     @tf.function
-    def test_step(self, inputs:tf.tensor, target:tf.tensor, **kwargs):
+    def test_step(self, inputs:tf.Tensor, target:tf.Tensor, **kwargs):
         assert inputs.shape == target.shape, "Input and target shapes must be same"
 
         outputs = self.restore_model(inputs, training=False)
-        loss = 0.0
+        loss = {}
+        total_loss = 0.0
         for loss_fn in self.loss:
-            loss += loss_fn(target, outputs)
-        
-        metrics = {}
-        for metric_name, metric_fn in self.metrics.items():
-            metrics[metric_name] = metric_fn(target, outputs)
-        return {"loss": loss, **metrics}
+            loss[loss_fn.name] = loss_fn(target, outputs)
+            total_loss += loss[loss_fn.name]
+
+        metrics_dict = {}
+        for metric_name, metric_fn in self.metrics_fn.items():
+            metrics_dict[metric_name] = metric_fn(target, outputs)
+        return {"total_loss": total_loss, **loss, **metrics_dict}
+    
+    def summary(self, **kwargs):
+        self.restore_model.summary(**kwargs)
+    
+    def save(self, filepath, overwrite=True, include_optimizer=True, save_format=None, signatures=None, options=None, save_traces=True, **kwargs):
+        self.restore_model.save(filepath, overwrite, include_optimizer, save_format, signatures, options, save_traces, **kwargs)
+    
+    def save_weights(self, filepath, overwrite=True, save_format=None, options=None, **kwargs):
+        self.restore_model.save_weights(filepath, overwrite, save_format, options, **kwargs)

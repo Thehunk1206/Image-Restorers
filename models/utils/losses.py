@@ -126,6 +126,16 @@ class PSNRLoss(Loss):
     def from_config(cls, config):
         return cls(**config)
 
+LOSS_DICT = {
+    'mse': MSE,
+    'mae': MAE,
+    'charbonnier_loss': CharbonnierLoss,
+    'psnr_loss': PSNRLoss
+}
+
+def get_loss_fn(loss_name:str)->Loss:
+    return LOSS_DICT[loss_name]
+
 if __name__ == "__main__":
     tf.random.set_seed(42)
     y_true = tf.random.uniform((1, 128, 128, 3), minval=0.0, maxval=1.0, dtype=tf.float32)

@@ -5,7 +5,7 @@
         "context": "..",
         "args": {
             // Example args
-            "TAG": "2.10.0",
+            "TAG": "2.11.0",
             "USERNAME": "developer"
             // "GIT_PROVIDER": "gitlab.com",
             // ** Sensitive info. Don't do this. **

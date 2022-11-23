@@ -31,8 +31,12 @@ import tensorflow.keras as keras
 from keras.layers import Conv2D
 from keras import Sequential
 
-from layers import NAFBlock
-from layers import PixelShuffle
+try:
+    from layers import NAFBlock
+    from layers import PixelShuffle
+except:
+    from archs.layers import NAFBlock
+    from archs.layers import PixelShuffle
 
 class NAFnet(tf.keras.Model):
     def __init__(
@@ -127,7 +131,6 @@ class NAFnet(tf.keras.Model):
                 ])
             )
     
-    @tf.function
     def call(self,inputs: tf.Tensor, training=None,**kwargs) -> tf.Tensor:
 
         if training is None:

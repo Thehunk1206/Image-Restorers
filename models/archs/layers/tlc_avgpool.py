@@ -31,9 +31,9 @@ import tensorflow as tf
 from tensorflow import keras
 
 try:
-    from edge_padding2D import EdgePadding2D
-except:
     from layers.edge_padding2D import EdgePadding2D
+except:
+    from archs.layers.edge_padding2D import EdgePadding2D
 
 class TlcAvgPool2D(keras.layers.Layer):
     def __init__(
