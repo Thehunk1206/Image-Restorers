@@ -224,19 +224,21 @@ class TfdataPipeline:
         
         return x
     
-    def _augment_pairs(self, image_pairs: tuple)-> Tuple[tf.Tensor, tf.Tensor]:
+    def _augment_pairs(self, input_image_path: str, output_image: str)-> Tuple[tf.Tensor, tf.Tensor]:
         '''
         Augment input and target image with spatial augmentation and input image with color augmentation. 
         Augment target image with color augmentation if self.augment_target is True. 
         args:
-            `image_pairs`: tuple, a tuple of input and target image
+            `input_image_path`: str, path to input image
+            `output_image`: str, path to output image
+
         return:
             `input_image`: tf.Tensor, the augmented content image
             `target_image`: tf.Tensor, the augmented style image
         '''
         seed                        = self.random_ng.make_seeds(2)[0]
 
-        input_image, target_image   = image_pairs
+        input_image, target_image   = self.load_input_target_image(input_image_path, output_image)
         input_image                 = self._spatial_augment(input_image, seed)
         target_image                = self._spatial_augment(target_image, seed)
 
@@ -259,15 +261,16 @@ class TfdataPipeline:
         dataset = tf.data.Dataset.from_tensor_slices((input_image_paths, target_image_paths))
 
         # Map the function to load the input and target images
-        dataset = (dataset
-                    .map(lambda x,y : self._augment_pairs(self.load_input_target_image(x,y)) if do_augment 
-                        else self.load_input_target_image(x,y), 
-                        num_parallel_calls=tf.data.AUTOTUNE)
-                    .cache()
-                    .shuffle(buffer_size=10)
-                    .batch(self.batch_size)
-                    .prefetch(buffer_size=tf.data.AUTOTUNE)
-        )
+        if do_augment:
+            dataset = dataset.map(self._augment_pairs, num_parallel_calls=tf.data.AUTOTUNE)
+        else:
+            dataset = dataset.map(self.load_input_target_image, num_parallel_calls=tf.data.AUTOTUNE)
+        
+        dataset = (dataset.cache()
+                        .shuffle(buffer_size=10)
+                        .batch(self.batch_size)
+                        .prefetch(buffer_size=tf.data.AUTOTUNE)
+                )
 
         return dataset
 
