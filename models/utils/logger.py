@@ -33,7 +33,7 @@ class CustomFormatter(logging.Formatter):
 
 
 # Define format for logs
-fmt = "%(asctime)s | %(name)s | %(levelname)s | %(message)s [%(filename)s:%(lineno)d]"
+fmt = "%(asctime)s | %(filename)s | %(levelname)s | %(message)s" #[line:%(lineno)d]"
 
 # Create stdout handler for logging to the console (logs all five levels)
 today = datetime.date.today()
