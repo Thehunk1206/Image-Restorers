@@ -93,13 +93,13 @@ class ImageRestorationModel(tf.keras.Model):
         outputs = self.restore_model(inputs, training=False)
         loss = {}
         total_loss = 0.0
-        for loss_fn in self.loss:
-            loss[loss_fn.name] = loss_fn(target, outputs)
-            total_loss += loss[loss_fn.name]
+        for loss_name, loss_fn in self.loss.items():
+            loss[f'val_{loss_fn.name}'] = loss_fn(target, outputs)
+            total_loss = tf.math.add_n(list(loss.values()))
 
         metrics_dict = {}
         for metric_name, metric_fn in self.metrics_fn.items():
-            metrics_dict[metric_name] = metric_fn(target, outputs)
+            metrics_dict[f'val_{metric_name}'] = metric_fn(target, outputs)
         return {"total_loss": total_loss, **loss, **metrics_dict}
     
     def summary(self, **kwargs):

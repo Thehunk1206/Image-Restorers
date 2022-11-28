@@ -61,9 +61,10 @@ def train():
         experiment_name     = config_raw['name']
         model_type          = config_raw['model_type']
         seed                = config_raw['manual_seed']
-        model_save_config   = config_parser_obj.get_model_save_config()
-        train_config        = config_parser_obj.get_train_config()
         dataset_config      = config_parser_obj.get_dataset_config()
+        train_config        = config_parser_obj.get_train_config()
+        model_save_config   = config_parser_obj.get_model_save_config()
+        tf_logger_config    = config_parser_obj.get_tb_logger_config()
     except KeyError as e:
         logging.error(f"KeyError: {e} not found in config file.")
     except Exception as e:
@@ -73,8 +74,9 @@ def train():
 
     # Initialize tf summary writer
     logging.info(f"Initializing tf summary writer..")
-    tb_config           = config_parser_obj.get_tb_logger_config()
-    logs_dir            = f"{tb_config['log_dir']}/{experiment_name}/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    if not os.path.exists(tf_logger_config['log_dir']):
+        os.makedirs(tf_logger_config['log_dir'])
+    logs_dir            = f"{tf_logger_config['log_dir']}/{experiment_name}/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
     train_writer        = tf.summary.create_file_writer(logs_dir + '/train')
     val_writer          = tf.summary.create_file_writer(logs_dir + '/val')
 
@@ -82,7 +84,7 @@ def train():
     logging.info("Initializing tf.data pipeline..")
     tfdataset           = TfdataPipeline(**dataset_config)
     train_data          = tfdataset.data_loader(dataset_type='train', do_augment=True)
-    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=False)
+    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=True)
 
     # Instantiate optimizer and scheduler
     logging.info("Initializing optimizer and scheduler..")
@@ -115,7 +117,7 @@ def train():
     logging.info(f"Selected metrics: {metrics_fn_dict.keys()}")
 
     # Compile model
-    logging.info(f"Compiling model..")
+    logging.info(f"Compiling model..\n")
     model.compile(
         optimizer   = optimizer,
         loss        = loss_fn_dict,
@@ -123,9 +125,54 @@ def train():
     )
 
     # Train model
-    logging.info(f"\nTraining with following configurations: ")
+    logging.info(f"Training with following configurations: ")
     for key, value in config_raw.items():
-        logging.info(f"{key}: {value}")
+        if isinstance(value, dict):
+            for k, v in value.items():
+                logging.info(f"{k}: {v}")
+        else:
+            logging.info(f"{key}: {value}")
+    
+    logging.info(f"Training started..")
+
+    for epoch in range(1,train_config['epoch']+1):
+        start_time = time.time()
+
+        for (train_input_image, train_target_image) in tqdm(train_data, unit='steps', desc=f"Epoch {epoch} - Training", colour='red'):
+            train_step_results = model.train_step(train_input_image, train_target_image)
+        
+        for (val_input_image, val_target_image) in tqdm(val_data, unit='steps', desc=f"Epoch {epoch} - Validation", colour='green'):
+            val_step_results = model.test_step(val_input_image, val_target_image)
+        
+        eta        = round(((time.time() - start_time)/60.0) * (train_config['epoch'] - epoch), 2)
+        epoch_time = round((time.time() - start_time)/60.0, 2)
+        logging.info(f"Epoch {epoch} completed in {epoch_time} mins. ETA: {eta} mins.")
+        for key, value in train_step_results.items():
+            logging.info(f"Train {key}: {value}")
+        for key, value in val_step_results.items():
+            logging.info(f"Val {key}: {value}")
+
+        # write to tensorboard 
+        logging.info(f"Writing to tensorboard..")
+        with train_writer.as_default():
+            for name, data in train_step_results.items():
+                tf.summary.scalar(name, data, step=epoch)
+        with val_writer.as_default():
+            for name, data in val_step_results.items():
+                tf.summary.scalar(   , data, step=epoch)
+        
+        if tf_logger_config["log_image"]:
+            pred = model.restore_model(val_input_image)
+            with val_writer.as_default():
+                tf.summary.image("Input", val_input_image*255.0, step=epoch, max_outputs=3, description='Input image')
+                tf.summary.image("Target", val_target_image*255.0, step=epoch, max_outputs=3, description='Target image')
+                tf.summary.image("Predicted", pred*255.0, step=epoch, max_outputs=3, description='Predicted image')
+        
+        
+        # # Save model
+        # if epoch % model_save_config['frequency'] == 0:
+        #     if 
+
 
 if __name__ == '__main__':
     train()

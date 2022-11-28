@@ -47,5 +47,5 @@ def get_model(model_name: str, **kwargs) -> Model:
     if model_name == 'NAFnet':
         model = NAFnet(**kwargs)
     
-    model   = Model(inputs=x, outputs=model.call(x))
+    model   = Model(inputs=x, outputs=model.call(x, training=True))
     return model
