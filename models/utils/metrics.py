@@ -39,14 +39,14 @@ def psnr(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     assert y_pred.shape.ndims == 4, f'y_pred must be a 4D tensor(batch_size, height, width, channels), got {y_pred.shape}'
     assert y_true.shape == y_pred.shape, f'y_true and y_pred must have the same shape, got {y_true.shape} and {y_pred.shape}'
 
-    return tf.image.psnr(y_true, y_pred, max_val=1.0)
+    return tf.reduce_mean(tf.image.psnr(y_true, y_pred, max_val=1.0))
 
 def ssim(y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
     assert y_true.shape.ndims == 4, f'y_true must be a 4D tensor(batch_size, height, width, channels), got {y_true.shape}'
     assert y_pred.shape.ndims == 4, f'y_pred must be a 4D tensor(batch_size, height, width, channels), got {y_pred.shape}'
     assert y_true.shape == y_pred.shape, f'y_true and y_pred must have the same shape, got {y_true.shape} and {y_pred.shape}'
 
-    return tf.image.ssim(y_true, y_pred, max_val=1.0)
+    return tf.reduce_mean(tf.image.ssim(y_true, y_pred, max_val=1.0))
 
 METRICS_DICT = {
     'psnr': psnr,
@@ -72,12 +72,12 @@ def get_metric_fn(metrics: List[str]) -> Dict[str, callable]:
 if __name__ == "__main__":
     tf.random.set_seed(23)
     # Create a random image
-    img1 = tf.random.uniform((1, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
-    img2 = tf.random.uniform((1, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
+    img1 = tf.random.uniform((4, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
+    img2 = tf.random.uniform((4, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
     # Compute PSNR
     psnr_val = psnr(img1, img2)
-    print(f'PSNR: {psnr_val.numpy()}')
+    print(f'PSNR: {psnr_val}')
 
     # Compute SSIM
-    ssim_val = ssim(img1, img1)
-    print(f'SSIM: {ssim_val.numpy()}')
+    ssim_val = ssim(img1, img2)
+    print(f'SSIM: {ssim_val}')
