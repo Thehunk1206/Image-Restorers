@@ -28,6 +28,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import tensorflow as tf
 
+from utils import logging
+
+# TODO: tracking loss and metrics for each epoch
 
 class ImageRestorationModel(tf.keras.Model):
     def __init__(
@@ -105,8 +108,8 @@ class ImageRestorationModel(tf.keras.Model):
     def summary(self, **kwargs):
         self.restore_model.summary(**kwargs)
     
-    def save(self, filepath, overwrite=True, include_optimizer=True, save_format=None, signatures=None, options=None, save_traces=True, **kwargs):
-        self.restore_model.save(filepath, overwrite, include_optimizer, save_format, signatures, options, save_traces, **kwargs)
-    
-    def save_weights(self, filepath, overwrite=True, save_format=None, options=None, **kwargs):
-        self.restore_model.save_weights(filepath, overwrite, save_format, options, **kwargs)
+    def save(self, filepath, overwrite=True, include_optimizer=True, save_format=None, signatures=None, options=None, save_traces=True, save_only_weights = False, **kwargs):
+        if save_only_weights:
+            self.restore_model.save_weights(f'{filepath}.h5', overwrite, save_format='h5')
+        else:
+            self.restore_model.save(filepath, overwrite, include_optimizer, save_format, signatures, options, save_traces, **kwargs)
