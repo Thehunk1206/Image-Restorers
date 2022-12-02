@@ -43,6 +43,10 @@ from utils import (
 
 from image_restoration_model import ImageRestorationModel
 
+# TODO: Add support for training pretrained models
+# TODO: Add support for multiple GPUs
+# TODO: Add support for mixed precision training
+
 def get_args():
     parser = argparse.ArgumentParser(description="Script to train image restoration models.")
     parser.add_argument('-c', '--config', type=str, required=True, help='Path to the config file.')
@@ -140,33 +144,35 @@ def train():
 
         for (train_input_image, train_target_image) in tqdm(train_data, unit='steps', desc=f"Epoch {epoch} - Training", colour='red'):
             train_step_results = model.train_step(train_input_image, train_target_image)
+            
+            with train_writer.as_default():
+                tf.summary.scalar(name='lr', data=optimizer.learning_rate, step=optimizer.iterations)
         
         for (val_input_image, val_target_image) in tqdm(val_data, unit='steps', desc=f"Epoch {epoch} - Validation", colour='green'):
             val_step_results = model.test_step(val_input_image, val_target_image)
         
         eta        = round(((time.time() - start_time)/60.0) * (train_config['epoch'] - epoch), 2)
         epoch_time = round((time.time() - start_time)/60.0, 2)
-        logging.info(f"Epoch {epoch} completed in {epoch_time} mins. ETA: {eta} mins.")
-        for key, value in train_step_results.items():
-            logging.info(f"Train {key}: {value}")
-        for key, value in val_step_results.items():
-            logging.info(f"Val {key}: {value}")
+        logging.info(f"Epoch {epoch} completed in {epoch_time} mins. ETA: {eta} mins.\n")
+        logging.info(f"Train results: {train_step_results}\n")
+        logging.info(f"Validation results: {val_step_results}\n")
 
         # write to tensorboard 
-        logging.info(f"Writing to tensorboard..")
+        logging.info(f"Writing to tensorboard..\n")
         with train_writer.as_default():
             for name, data in train_step_results.items():
                 tf.summary.scalar(name, data, step=epoch)
+
         with val_writer.as_default():
             for name, data in val_step_results.items():
-                tf.summary.scalar(   , data, step=epoch)
+                tf.summary.scalar(name, data, step=epoch)
         
         if tf_logger_config["log_image"]:
             pred = model.restore_model(val_input_image)
             with val_writer.as_default():
-                tf.summary.image("Input", val_input_image*255.0, step=epoch, max_outputs=3, description='Input image')
-                tf.summary.image("Target", val_target_image*255.0, step=epoch, max_outputs=3, description='Target image')
-                tf.summary.image("Predicted", pred*255.0, step=epoch, max_outputs=3, description='Predicted image')
+                tf.summary.image("Input", val_input_image, step=epoch, max_outputs=3, description='Input image')
+                tf.summary.image("Target", val_target_image, step=epoch, max_outputs=3, description='Target image')
+                tf.summary.image("Predicted", pred, step=epoch, max_outputs=3, description='Predicted image')
         
         
         # # Save model
