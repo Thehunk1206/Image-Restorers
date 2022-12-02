@@ -100,14 +100,12 @@ class CharbonnierLoss(Loss):
         return cls(**config)
 
 class PSNRLoss(Loss):
-    def __init__(self, max_val:float=1.0, weight:float = 1.0, name:str='psnr_loss'):
+    def __init__(self, weight:float = 1.0, name:str='psnr_loss'):
         super(PSNRLoss, self).__init__(name=name)
         assert weight > 0, 'Weight must be greater than 0'
-
-        self.max_val    = max_val
         self.weight     = weight
         self.mse        = MSE()
-        self.log10      = lambda x: tf.math.log(x) / tf.math.log(10.0)
+        self.scale      = 10 / tf.math.log(10.0)
 
     @tf.function
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
@@ -115,7 +113,7 @@ class PSNRLoss(Loss):
         assert y_pred.shape.ndims == 4, f'y_pred must be a 4D tensor(batch_size, height, width, channels), got {y_pred.shape}'
         assert y_true.shape == y_pred.shape, f'y_true and y_pred must have the same shape, got {y_true.shape} and {y_pred.shape}'
 
-        return -1.0 * self.weight * 10 * self.log10(self.max_val ** 2 / (self.mse(y_true, y_pred)+1e-10))
+        return self.weight * self.scale * tf.math.log(self.mse(y_true, y_pred)+1e-10)
     
     def get_config(self):
         config = super(PSNRLoss, self).get_config()
