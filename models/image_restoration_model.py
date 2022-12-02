@@ -55,7 +55,7 @@ class ImageRestorationModel(tf.keras.Model):
 
         self.optimizer  = optimizer
         self.loss       = loss
-        self.metrics_fn    = metrics_fn
+        self.metrics_fn = metrics_fn
 
     @tf.function
     def train_step(self, inputs:tf.Tensor, target:tf.Tensor, **kwargs):
@@ -93,7 +93,7 @@ class ImageRestorationModel(tf.keras.Model):
         outputs = self.restore_model(inputs, training=False)
         loss = {}
         total_loss = 0.0
-        for loss_name, loss_fn in self.loss.items():
+        for _, loss_fn in self.loss.items():
             loss[f'val_{loss_fn.name}'] = loss_fn(target, outputs)
             total_loss = tf.math.add_n(list(loss.values()))
 
