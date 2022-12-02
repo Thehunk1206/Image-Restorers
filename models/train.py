@@ -167,18 +167,26 @@ def train():
             for name, data in val_step_results.items():
                 tf.summary.scalar(name, data, step=epoch)
         
-        if tf_logger_config["log_image"]:
+        if tf_logger_config["log_image"]: # log image
             pred = model.restore_model(val_input_image)
             with val_writer.as_default():
                 tf.summary.image("Input", val_input_image, step=epoch, max_outputs=3, description='Input image')
                 tf.summary.image("Target", val_target_image, step=epoch, max_outputs=3, description='Target image')
                 tf.summary.image("Predicted", pred, step=epoch, max_outputs=3, description='Predicted image')
-        
-        
-        # # Save model
-        # if epoch % model_save_config['frequency'] == 0:
-        #     if 
 
+        # Save model
+        if epoch % model_save_config['frequency']:
+            logging.info(f"Saving model..")
+            if not os.path.exists(model_save_config['checkpoint_dir']):
+                os.makedirs(model_save_config['checkpoint_dir'])
+            
+            model_path = f'{model_save_config["checkpoint_dir"]}/{experiment_name}_{epoch}'
+            model.save(
+                model_path,
+                save_format= model_save_config['save_format'],
+                save_only_weights= model_save_config['save_only_weights']
+            )
+            logging.info(f"Model saved at {model_path}")
 
 if __name__ == '__main__':
     train()
