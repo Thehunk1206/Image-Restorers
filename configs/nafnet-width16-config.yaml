@@ -5,8 +5,8 @@ manual_seed: 42
 datasets:
   # this params is same as the keywords args taken by dataset class to instatiate
   dataset_dir: Dataset
-  target_size: [256,256,3]
-  batch_size: 16
+  target_size: [128,128,3]
+  batch_size: 8
   input_folder_name: blur
   target_folder_name: sharp
   validation_split: 0.1
@@ -19,18 +19,18 @@ model:
   model_params:
     # this model configuration is same as all the keywords args a model class takes
     # to instatiate
-    width: 16
+    width: 8
     num_enc_blocks: [1, 1, 1, 4]
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
-    train_size: [256, 256, 3]
+    train_size: [128, 128, 3]
     dropout_rate: 0.0
-    local_agg: False #if set to True, then set save_only_weights to True.
+    local_agg: True #if set to True, then set save_only_weights to True.
     tlc_factor: 1.5
 
 # training settings
 train:
-  epoch: 100
+  epoch: 10
 
   optimizer:
     name: Adam
@@ -48,9 +48,8 @@ train:
     alpha: 0.0
   
   losses:
-    psnr_loss: 
-      max_val: 1.0
-      weight: 1.0
+    # psnr_loss: 
+    #   weight: 1.0
     charbonnier_loss:
       weight: 1.0
   
@@ -62,11 +61,11 @@ train:
 model_save:
   frequency: 10
   format: tf
-  save_only_weights: False
-  checkpoint_dir: ../trained_model/
+  save_only_weights: True
+  checkpoint_dir: trained_model/
 
 tb_logger:
-  log_dir: ../logs/
-  log_image: False
+  log_dir: logs/
+  log_image: True
   
 
