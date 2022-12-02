@@ -88,7 +88,7 @@ def train():
     logging.info("Initializing tf.data pipeline..")
     tfdataset           = TfdataPipeline(**dataset_config)
     train_data          = tfdataset.data_loader(dataset_type='train', do_augment=True)
-    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=True)
+    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=False)
 
     # Instantiate optimizer and scheduler
     logging.info("Initializing optimizer and scheduler..")
@@ -175,7 +175,7 @@ def train():
                 tf.summary.image("Predicted", pred, step=epoch, max_outputs=3, description='Predicted image')
 
         # Save model
-        if epoch % model_save_config['frequency']:
+        if epoch % model_save_config['frequency'] == 0:
             logging.info(f"Saving model..")
             if not os.path.exists(model_save_config['checkpoint_dir']):
                 os.makedirs(model_save_config['checkpoint_dir'])
