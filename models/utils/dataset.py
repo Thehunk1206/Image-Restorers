@@ -266,7 +266,8 @@ class TfdataPipeline:
         else:
             dataset = dataset.map(self.load_input_target_image, num_parallel_calls=tf.data.AUTOTUNE)
         
-        dataset = (dataset.cache()
+        dataset = (dataset
+                        .cache()
                         .shuffle(buffer_size=10)
                         .batch(self.batch_size)
                         .prefetch(buffer_size=tf.data.AUTOTUNE)
