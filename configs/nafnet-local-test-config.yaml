@@ -11,8 +11,10 @@ datasets:
   target_folder_name: sharp
   validation_split: 0.1
   # supported augmentations ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation", "random_brightness", "random_hue", "random_jpeg_quality"]
-  augmenting_list: ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation"]
+  augmenting_list: ["random_crop", "flip_left_right", "flip_up_down"]
   augment_target_images: True
+  cache_train_dataset: True
+  cache_valid_dataset: True
 
 model:
   name: NAFnet
@@ -37,9 +39,13 @@ train:
     weight_decay: !!float 1e-3
     beta_1: 0.9
     beta_2: 0.99
-    clipvalue: 0.0
+    clipvalue: 0.5
+    clipnorm: ~
+    global_clipnorm: ~
     amsgrad: False
     use_ema: False
+    ema_momentum: 0.99
+    jit_compile: True
 
   scheduler:
     name: CosineDecayRestarts # ["CosineDecayRestarts", "CosineDecay","ExponentialDecay", "InverseTimeDecay","PolynomialDecay"]
@@ -67,5 +73,3 @@ model_save:
 tb_logger:
   log_dir: logs/
   log_image: True
-  
-

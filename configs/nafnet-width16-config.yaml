@@ -5,7 +5,7 @@ manual_seed: 42
 datasets:
   # this params is same as the keywords args taken by dataset class to instatiate
   dataset_dir: Dataset
-  target_size: [384,384,3]
+  target_size: [256,256,3]
   batch_size: 4
   input_folder_name: blur
   target_folder_name: sharp
@@ -13,6 +13,8 @@ datasets:
   # supported augmentations ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation", "random_brightness", "random_hue", "random_jpeg_quality"]
   augmenting_list: ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation"]
   augment_target_images: True
+  cache_train_dataset: True
+  cache_valid_dataset: False
 
 model:
   name: NAFnet
@@ -23,9 +25,9 @@ model:
     num_enc_blocks: [1, 1, 1, 18]
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
-    train_size: [384, 384, 3]
+    train_size: [256, 256, 3]
     dropout_rate: 0.0
-    local_agg: False #if set to True, then set save_only_weights to True.
+    local_agg: True #if set to True, then set save_only_weights to True.
     tlc_factor: 1.5
 
 # training settings
@@ -37,7 +39,7 @@ train:
     weight_decay: !!float 1e-3
     beta_1: 0.9
     beta_2: 0.99
-    clipvalue: 0.0
+    clipvalue: 0.5
     clipnorm: ~
     global_clipnorm: ~
     amsgrad: False
@@ -56,7 +58,7 @@ train:
     # psnr_loss: 
     #   weight: 1.0
     charbonnier_loss:
-      weight: 1.0
+      weight: 2.0
   
   metrics: ["psnr","ssim"]
 
@@ -66,11 +68,9 @@ train:
 model_save:
   frequency: 10
   save_format: tf
-  save_only_weights: False
+  save_only_weights: True
   checkpoint_dir: trained_model/
 
 tb_logger:
   log_dir: logs/
   log_image: True
-  
-

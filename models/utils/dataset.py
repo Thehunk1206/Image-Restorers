@@ -41,6 +41,8 @@ class TfdataPipeline:
         `validation_split`: float, the percentage of the dataset to be used for validation
         `augmenting_list`: list, the list of augmenting methods to be used
         `augment_target_images`: bool, whether to augment the target images or not
+        `cache_train_dataset`: bool, whether to cache the training dataset or not
+        `cache_valid_dataset`: bool, whether to cache the validation dataset or not
     
     supported augmenting methods:
         random_crop: randomly crop the images
@@ -83,6 +85,8 @@ class TfdataPipeline:
         validation_split: float         = 0.1,
         augmenting_list: list           = ['random_crop', 'flip_left_right', 'flip_up_down', 'random_contrast', 'random_saturation'],
         augment_target_images: bool     = True,
+        cache_train_dataset: bool       = True,
+        cache_valid_dataset: bool       = True,
     ) -> None:
         self.dataset_dir            = dataset_dir
         self.IMG_H                  = target_size[0]
@@ -94,6 +98,8 @@ class TfdataPipeline:
         self.validation_split       = validation_split
         self.augmenting_list        = augmenting_list
         self.augment_target_images  = augment_target_images
+        self.cache_train_dataset    = cache_train_dataset
+        self.cache_valid_dataset    = cache_valid_dataset
         self.__dataset_type         = ['train', 'test', 'valid']
         self.random_ng              = tf.random.Generator.from_seed(12, alg='philox')
 
@@ -249,7 +255,7 @@ class TfdataPipeline:
         return input_image, target_image
 
 
-    def _tf_dataset(self, input_image_paths: list, target_image_paths:list, do_augment:bool)-> tf.data.Dataset:
+    def _tf_dataset(self, input_image_paths: list, target_image_paths:list, do_augment:bool, cache:bool=True)-> tf.data.Dataset:
         '''
         Creates a tf.data.Dataset object from the input and target image paths
         args:
@@ -266,8 +272,10 @@ class TfdataPipeline:
         else:
             dataset = dataset.map(self.load_input_target_image, num_parallel_calls=tf.data.AUTOTUNE)
         
+        if cache:
+            dataset = dataset.cache()
+        
         dataset = (dataset
-                        .cache()
                         .shuffle(buffer_size=10)
                         .batch(self.batch_size)
                         .prefetch(buffer_size=tf.data.AUTOTUNE)
@@ -291,11 +299,11 @@ class TfdataPipeline:
         # Load the file names of the dataset
         if dataset_type == 'train':
             (train_input_image_paths, train_target_image_paths), _ = self._load_train_val_image_file_names()
-            return self._tf_dataset(train_input_image_paths, train_target_image_paths, do_augment)
+            return self._tf_dataset(train_input_image_paths, train_target_image_paths, do_augment, cache=self.cache_train_dataset)
         
         elif dataset_type == 'valid':
             _, (valid_input_image_paths, valid_target_image_paths) = self._load_train_val_image_file_names()
-            return self._tf_dataset(valid_input_image_paths, valid_target_image_paths, do_augment)
+            return self._tf_dataset(valid_input_image_paths, valid_target_image_paths, do_augment, cache=self.cache_valid_dataset)
     
         else:
             input_image_paths, target_image_paths = self._load_test_image_file_names()
