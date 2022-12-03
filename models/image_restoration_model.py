@@ -79,15 +79,15 @@ class ImageRestorationModel(tf.keras.Model):
             outputs = self.restore_model(inputs, training=True)
             loss = {}
             for loss_name, loss_fn in self.loss.items():
-                loss[loss_name] = loss_fn(target, outputs)
+                loss[loss_name] = float(loss_fn(target, outputs))
             total_loss = tf.math.add_n(list(loss.values()))
         gradients = tape.gradient(total_loss, self.restore_model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.restore_model.trainable_variables))
         
         metrics_dict = {}
         for metric_name, metric_fn in self.metrics_fn.items():
-            metrics_dict[metric_name] = metric_fn(target, outputs)
-        return {"total_loss": total_loss, **loss,  **metrics_dict}
+            metrics_dict[metric_name] = float(metric_fn(target, outputs))
+        return {"total_loss": float(total_loss), **loss,  **metrics_dict}
     
     @tf.function
     def test_step(self, inputs:tf.Tensor, target:tf.Tensor, **kwargs):
@@ -97,13 +97,13 @@ class ImageRestorationModel(tf.keras.Model):
         loss = {}
         total_loss = 0.0
         for _, loss_fn in self.loss.items():
-            loss[f'val_{loss_fn.name}'] = loss_fn(target, outputs)
+            loss[f'val_{loss_fn.name}'] = float(loss_fn(target, outputs))
             total_loss = tf.math.add_n(list(loss.values()))
 
         metrics_dict = {}
         for metric_name, metric_fn in self.metrics_fn.items():
-            metrics_dict[f'val_{metric_name}'] = metric_fn(target, outputs)
-        return {"total_loss": total_loss, **loss, **metrics_dict}
+            metrics_dict[f'val_{metric_name}'] = float(metric_fn(target, outputs))
+        return {"total_loss": float(total_loss), **loss, **metrics_dict}
     
     def summary(self, **kwargs):
         self.restore_model.summary(**kwargs)
