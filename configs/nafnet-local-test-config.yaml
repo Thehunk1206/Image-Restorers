@@ -1,0 +1,71 @@
+name: NAFNet-width16
+model_type: ImageRestorationModel
+manual_seed: 42
+
+datasets:
+  # this params is same as the keywords args taken by dataset class to instatiate
+  dataset_dir: Dataset
+  target_size: [128,128,3]
+  batch_size: 4
+  input_folder_name: blur
+  target_folder_name: sharp
+  validation_split: 0.1
+  # supported augmentations ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation", "random_brightness", "random_hue", "random_jpeg_quality"]
+  augmenting_list: ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation"]
+  augment_target_images: True
+
+model:
+  name: NAFnet
+  model_params:
+    # this model configuration is same as all the keywords args a model class takes
+    # to instatiate
+    width: 8
+    num_enc_blocks: [1, 1, 1, 4]
+    num_middle_blocks: 1
+    num_dec_blocks: [1, 1, 1, 1]
+    train_size: [128, 128, 3]
+    dropout_rate: 0.0
+    local_agg: False #if set to True, then set save_only_weights to True.
+    tlc_factor: 1.5
+
+# training settings
+train:
+  epoch: 2
+
+  optimizer:
+    name: Adam
+    weight_decay: !!float 1e-3
+    beta_1: 0.9
+    beta_2: 0.99
+    clipvalue: 0.0
+    amsgrad: False
+    use_ema: False
+
+  scheduler:
+    name: CosineDecayRestarts # ["CosineDecayRestarts", "CosineDecay","ExponentialDecay", "InverseTimeDecay","PolynomialDecay"]
+    initial_learning_rate: !!float 1e-3
+    first_decay_steps: 1000
+    alpha: 0.0
+  
+  losses:
+    # psnr_loss: 
+    #   weight: 1.0
+    charbonnier_loss:
+      weight: 1.0
+  
+  metrics: ["psnr","ssim"]
+
+  pretrained_path: ~
+
+
+model_save:
+  frequency: 10
+  save_format: tf
+  save_only_weights: False
+  checkpoint_dir: trained_model/
+
+tb_logger:
+  log_dir: logs/
+  log_image: True
+  
+
