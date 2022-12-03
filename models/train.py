@@ -43,6 +43,7 @@ from utils import (
 
 from image_restoration_model import ImageRestorationModel
 
+# TODO: Show device info
 # TODO: Add support for training pretrained models
 # TODO: Add support for multiple GPUs
 # TODO: Add support for mixed precision training

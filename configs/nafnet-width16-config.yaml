@@ -11,7 +11,7 @@ datasets:
   target_folder_name: sharp
   validation_split: 0.1
   # supported augmentations ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation", "random_brightness", "random_hue", "random_jpeg_quality"]
-  augmenting_list: ["random_crop", "flip_left_right", "flip_up_down", "random_contrast", "random_saturation"]
+  augmenting_list: ["random_crop", "flip_left_right", "flip_up_down"]
   augment_target_images: True
   cache_train_dataset: True
   cache_valid_dataset: False
