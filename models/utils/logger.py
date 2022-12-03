@@ -41,7 +41,8 @@ logging.basicConfig(
     level=logging.DEBUG,
     filename='Image_restorer_{}.log'.format(today.strftime('%Y_%m_%d')),
     filemode='a',
-    format=fmt
+    format=fmt,
+    force=True
 )
 
 stdout_handler = logging.StreamHandler()
