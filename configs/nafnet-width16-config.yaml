@@ -22,7 +22,7 @@ model:
     # this model configuration is same as all the keywords args a model class takes
     # to instatiate
     width: 16
-    num_enc_blocks: [1, 1, 1, 18]
+    num_enc_blocks: [1, 1, 1, 28]
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
     train_size: [256, 256, 3]
@@ -68,8 +68,10 @@ train:
 model_save:
   frequency: 10
   save_format: tf
-  save_only_weights: True
-  checkpoint_dir: trained_model/
+  save_only_weights: Fasle
+  checkpoint_dir: checkpoints
+  saved_model_dir: trained_model
+
 
 tb_logger:
   log_dir: logs/

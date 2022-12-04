@@ -5,8 +5,8 @@ manual_seed: 42
 datasets:
   # this params is same as the keywords args taken by dataset class to instatiate
   dataset_dir: Dataset
-  target_size: [128,128,3]
-  batch_size: 4
+  target_size: [64,64,3]
+  batch_size: 8
   input_folder_name: blur
   target_folder_name: sharp
   validation_split: 0.1
@@ -14,25 +14,25 @@ datasets:
   augmenting_list: ["random_crop", "flip_left_right", "flip_up_down"]
   augment_target_images: True
   cache_train_dataset: True
-  cache_valid_dataset: True
+  cache_valid_dataset: False
 
 model:
   name: NAFnet
   model_params:
     # this model configuration is same as all the keywords args a model class takes
     # to instatiate
-    width: 8
-    num_enc_blocks: [1, 1, 1, 4]
+    width: 4
+    num_enc_blocks: [1, 1, 1, 2]
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
-    train_size: [128, 128, 3]
+    train_size: [64, 64, 3]
     dropout_rate: 0.0
-    local_agg: False #if set to True, then set save_only_weights to True.
+    local_agg: True #if set to True, then set save_only_weights to True.
     tlc_factor: 1.5
 
 # training settings
 train:
-  epoch: 2
+  epoch: 20
 
   optimizer:
     name: Adam
@@ -65,10 +65,11 @@ train:
 
 
 model_save:
-  frequency: 10
+  frequency: 1
   save_format: tf
-  save_only_weights: False
-  checkpoint_dir: trained_model/
+  save_only_weights: Fasle
+  checkpoint_dir: checkpoints
+  saved_model_dir: trained_model
 
 tb_logger:
   log_dir: logs/
