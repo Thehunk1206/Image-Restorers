@@ -108,8 +108,5 @@ class ImageRestorationModel(tf.keras.Model):
     def summary(self, **kwargs):
         self.restore_model.summary(**kwargs)
     
-    def save(self, filepath, overwrite=True, include_optimizer=True, save_format=None, signatures=None, options=None, save_traces=True, save_only_weights = False, **kwargs):
-        if save_only_weights:
-            self.restore_model.save_weights(f'{filepath}.h5', overwrite, save_format='h5')
-        else:
-            self.restore_model.save(filepath, overwrite, include_optimizer, save_format, signatures, options, save_traces, **kwargs)
+    def save(self, filepath, overwrite=True, include_optimizer=True, save_format=None, signatures=None, options=None, save_traces=True, **kwargs):
+        self.restore_model.save(filepath, overwrite, include_optimizer, save_format, signatures, options, save_traces, **kwargs)

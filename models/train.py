@@ -81,15 +81,15 @@ def train():
     logging.info(f"Initializing tf summary writer..")
     if not os.path.exists(tf_logger_config['log_dir']):
         os.makedirs(tf_logger_config['log_dir'])
-    logs_dir            = f"{tf_logger_config['log_dir']}/{experiment_name}/{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    logs_dir            = f"{tf_logger_config['log_dir']}/{experiment_name}/{datetime.now().strftime('%Y%m%d')}"
     train_writer        = tf.summary.create_file_writer(logs_dir + '/train')
     val_writer          = tf.summary.create_file_writer(logs_dir + '/val')
 
     # Instantiate tf.data pipeline
     logging.info("Initializing tf.data pipeline..")
     tfdataset           = TfdataPipeline(**dataset_config)
-    train_data          = tfdataset.data_loader(dataset_type='train', do_augment=True)
-    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=False)
+    train_data          = tfdataset.data_loader(dataset_type='train')
+    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=True)
 
     # Instantiate optimizer and scheduler
     logging.info("Initializing optimizer and scheduler..")
@@ -121,6 +121,20 @@ def train():
     metrics_fn_dict        = get_metric_fn(config_parser_obj.get_metric_functions())
     logging.info(f"Selected metrics: {metrics_fn_dict.keys()}")
 
+    # checkpoint manager
+    checkpoint_dir = f"{model_save_config['checkpoint_dir']}/{experiment_name}"
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+    checkpoint_prefix   = f"{experiment_name}_ckpt"
+    checkpoint          = tf.train.Checkpoint(epoch=tf.Variable(0), optimizer=optimizer, model=model.restore_model)
+    checkpoint_manager  = tf.train.CheckpointManager(checkpoint, checkpoint_dir, max_to_keep=3, checkpoint_name=checkpoint_prefix)
+
+    if checkpoint_manager.latest_checkpoint:
+        checkpoint.restore(checkpoint_manager.latest_checkpoint)
+        logging.info(f"Restored model from {checkpoint_manager.latest_checkpoint}")
+    else:
+        logging.info("Initializing model from scratch.")
+    
     # Compile model
     logging.info(f"Compiling model..\n")
     model.compile(
@@ -128,7 +142,7 @@ def train():
         loss        = loss_fn_dict,
         metrics_fn  = metrics_fn_dict
     )
-
+    
     # Train model
     logging.info(f"Training with following configurations: ")
     for key, value in config_raw.items():
@@ -140,7 +154,10 @@ def train():
     
     logging.info(f"Training started..")
 
-    for epoch in range(1,train_config['epoch']+1):
+    for epoch in range(int(checkpoint.epoch) + 1, train_config['epoch']+1):
+
+        checkpoint.epoch.assign_add(1) # increment epoch for checkpoint
+
         start_time = time.time()
 
         for (train_input_image, train_target_image) in tqdm(train_data, unit='steps', desc=f"Epoch {epoch} - Training", colour='red'):
@@ -159,7 +176,7 @@ def train():
         logging.info(f"Validation results: {val_step_results}\n")
 
         # write to tensorboard 
-        logging.info(f"Writing to tensorboard..\n")
+        logging.info(f"Writing train logs to tensorboard..\n")
         with train_writer.as_default():
             for name, data in train_step_results.items():
                 tf.summary.scalar(name, data, step=epoch)
@@ -177,17 +194,18 @@ def train():
 
         # Save model
         if epoch % model_save_config['frequency'] == 0:
-            logging.info(f"Saving model..")
-            if not os.path.exists(model_save_config['checkpoint_dir']):
-                os.makedirs(model_save_config['checkpoint_dir'])
-            
-            model_path = f'{model_save_config["checkpoint_dir"]}/{experiment_name}_{epoch}'
-            model.save(
-                model_path,
-                save_format= model_save_config['save_format'],
-                save_only_weights= model_save_config['save_only_weights']
-            )
-            logging.info(f"Model saved at {model_path}")
+            checkpoint_manager.save()
+            logging.info(f"Model saved at {checkpoint_dir} \n")
+
+    if not model_save_config['save_only_weights']:
+        try:
+            model_save_path = f"{model_save_config['model_save_dir']}/{experiment_name}"
+            if not os.path.exists(model_save_path):
+                os.makedirs(model_save_path)
+            model.save(model_save_path)
+            logging.info(f"Model saved at {model_save_path}")
+        except Exception as e:
+            logging.error(f"Error while saving model: {e}")
 
 if __name__ == '__main__':
     train()
