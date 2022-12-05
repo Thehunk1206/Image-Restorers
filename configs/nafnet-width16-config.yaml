@@ -68,7 +68,7 @@ train:
 model_save:
   frequency: 10
   save_format: tf
-  save_only_weights: Fasle
+  save_only_weights: True
   checkpoint_dir: checkpoints
   saved_model_dir: trained_model
 
