@@ -44,7 +44,6 @@ from utils import (
 from image_restoration_model import ImageRestorationModel
 
 # TODO: Show device info
-# TODO: Add support for training pretrained models
 # TODO: Add support for multiple GPUs
 # TODO: Add support for mixed precision training
 
@@ -151,6 +150,10 @@ def train():
                 logging.info(f"{k}: {v}")
         else:
             logging.info(f"{key}: {value}")
+    
+    devices = tf.config.list_physical_devices()
+
+    logging.info(f'Device Found: {devices}')
     
     logging.info(f"Training started..")
 
