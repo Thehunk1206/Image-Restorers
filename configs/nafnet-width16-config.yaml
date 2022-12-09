@@ -6,7 +6,7 @@ datasets:
   # this params is same as the keywords args taken by dataset class to instatiate
   dataset_dir: Dataset
   target_size: [256,256,3]
-  batch_size: 4
+  batch_size: 8
   input_folder_name: blur
   target_folder_name: sharp
   validation_split: 0.1
@@ -26,7 +26,7 @@ model:
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
     train_size: [256, 256, 3]
-    dropout_rate: 0.0
+    dropout_rate: 0.1
     local_agg: True #if set to True, then set save_only_weights to True.
     tlc_factor: 1.5
 
@@ -36,10 +36,10 @@ train:
 
   optimizer:
     name: Adam
-    weight_decay: !!float 1e-3
+    weight_decay: ~
     beta_1: 0.9
-    beta_2: 0.99
-    clipvalue: 0.5
+    beta_2: 0.9
+    clipvalue: 1.0
     clipnorm: ~
     global_clipnorm: ~
     amsgrad: False
@@ -47,23 +47,23 @@ train:
     ema_momentum: 0.99
     jit_compile: True
 
-
   scheduler:
     name: CosineDecayRestarts # ["CosineDecayRestarts", "CosineDecay","ExponentialDecay", "InverseTimeDecay","PolynomialDecay"]
-    initial_learning_rate: !!float 1e-3
-    first_decay_steps: 1000
-    alpha: 0.0
+    initial_learning_rate: !!float 2e-4
+    first_decay_steps: 2000
+    t_mul: 2.0
+    m_mul: 0.6
+    alpha: 0.001
   
   losses:
-    # psnr_loss: 
-    #   weight: 1.0
-    charbonnier_loss:
-      weight: 2.0
+    psnr_loss: 
+      weight: 1.0
+    # charbonnier_loss:
+    #   weight: 2.0
   
   metrics: ["psnr","ssim"]
 
   pretrained_path: ~
-
 
 model_save:
   frequency: 10
@@ -71,7 +71,6 @@ model_save:
   save_only_weights: True
   checkpoint_dir: checkpoints
   saved_model_dir: trained_model
-
 
 tb_logger:
   log_dir: logs/
