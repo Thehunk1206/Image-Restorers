@@ -175,10 +175,17 @@ def train():
         eta        = round(((time.time() - start_time)/60.0) * (train_config['epoch'] - epoch), 2)
         epoch_time = round((time.time() - start_time)/60.0, 2)
         logging.info(f"Epoch {epoch} completed in {epoch_time} mins. ETA: {eta} mins.\n")
-        logging.info(f"Train results: {train_step_results}\n")
-        logging.info(f"Validation results: {val_step_results}\n")
+
+        logging.info(f"==========Train results==========")
+        for name, data in train_step_results.items():
+            logging.info(f"Train {name}: {float(data)}")
+
+        logging.info(f"==========Validation results==========")
+        for name, data in val_step_results.items():
+            logging.info(f"Validation {name}: {float(data)}")
 
         # write to tensorboard 
+        print()
         logging.info(f"Writing train logs to tensorboard..\n")
         with train_writer.as_default():
             for name, data in train_step_results.items():
