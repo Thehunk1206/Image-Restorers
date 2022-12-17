@@ -88,7 +88,7 @@ def train():
     logging.info("Initializing tf.data pipeline..")
     tfdataset           = TfdataPipeline(**dataset_config)
     train_data          = tfdataset.data_loader(dataset_type='train')
-    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=True)
+    val_data            = tfdataset.data_loader(dataset_type='valid', do_augment=False)
 
     # Instantiate optimizer and scheduler
     logging.info("Initializing optimizer and scheduler..")
@@ -100,7 +100,7 @@ def train():
 
     # Instantiate model
     logging.info("Initializing model..")
-    model_name          = config_parser_obj.get_model_name()
+    model_name          = config_parser_obj.get_model_name().lower()
     model_config        = config_parser_obj.get_model_config()
     model               = get_model(model_name, **model_config)
     model               = ImageRestorationModel(restore_model=model)

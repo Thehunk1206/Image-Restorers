@@ -255,7 +255,7 @@ class TfdataPipeline:
         return input_image, target_image
 
 
-    def _tf_dataset(self, input_image_paths: list, target_image_paths:list, do_augment:bool, cache:bool=True)-> tf.data.Dataset:
+    def _tf_dataset(self, input_image_paths: list, target_image_paths:list, do_augment:bool, cache:bool=False)-> tf.data.Dataset:
         '''
         Creates a tf.data.Dataset object from the input and target image paths
         args:

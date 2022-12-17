@@ -34,7 +34,7 @@ except:
     from archs.naf_net import NAFnet
 
 _model_names = [
-    'NAFnet',
+    'nafnet',
 ]
 
 def get_model(model_name: str, **kwargs) -> Model:
@@ -44,7 +44,7 @@ def get_model(model_name: str, **kwargs) -> Model:
         raise ValueError(f"Model name should be one of {_model_names}, got {model_name}. \
                             Develop the model and add it to the list at and import the model at {__file__}.")
 
-    if model_name == 'NAFnet':
+    if model_name == 'nafnet':
         model = NAFnet(**kwargs)
     
     model   = Model(inputs=x, outputs=model.call(x, training=True))

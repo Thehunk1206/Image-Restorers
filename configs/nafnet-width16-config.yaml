@@ -14,15 +14,15 @@ datasets:
   augmenting_list: ["random_crop", "flip_left_right", "flip_up_down"]
   augment_target_images: True
   cache_train_dataset: True
-  cache_valid_dataset: False
+  cache_valid_dataset: True
 
 model:
   name: NAFnet
   model_params:
     # this model configuration is same as all the keywords args a model class takes
     # to instatiate
-    width: 16
-    num_enc_blocks: [1, 1, 1, 28]
+    width: 32
+    num_enc_blocks: [1, 1, 1, 16]
     num_middle_blocks: 1
     num_dec_blocks: [1, 1, 1, 1]
     train_size: [256, 256, 3]
@@ -32,14 +32,14 @@ model:
 
 # training settings
 train:
-  epoch: 100
+  epoch: 2000
 
   optimizer:
     name: Adam
     weight_decay: ~
     beta_1: 0.9
     beta_2: 0.9
-    clipvalue: 1.0
+    clipvalue: 0.0
     clipnorm: ~
     global_clipnorm: ~
     amsgrad: False
@@ -48,12 +48,12 @@ train:
     jit_compile: True
 
   scheduler:
-    name: CosineDecayRestarts # ["CosineDecayRestarts", "CosineDecay","ExponentialDecay", "InverseTimeDecay","PolynomialDecay"]
-    initial_learning_rate: !!float 2e-4
-    first_decay_steps: 2000
-    t_mul: 2.0
-    m_mul: 0.6
-    alpha: 0.001
+    name: CosineDecay # ["CosineDecayRestarts", "CosineDecay","ExponentialDecay", "InverseTimeDecay","PolynomialDecay"]
+    initial_learning_rate: !!float 1e-3
+    decay_steps: 60000
+    # t_mul: 2.0
+    # m_mul: 0.6
+    alpha: 0.005
   
   losses:
     psnr_loss: 
@@ -66,7 +66,7 @@ train:
   pretrained_path: ~
 
 model_save:
-  frequency: 10
+  frequency: 2
   save_format: tf
   save_only_weights: True
   checkpoint_dir: checkpoints
