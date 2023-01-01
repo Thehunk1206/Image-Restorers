@@ -14,16 +14,17 @@ def get_args():
     args = parser.parse_args()
     return args
 
-def test_model():
+def test_model(save_results=False):
     args = get_args()
     logging.info(f"Config file loaded from {args.config}")
     config_parser_obj = ConfigParser(args.config)
     logging.info(f"Config file parsed successfully..")
     config_raw = config_parser_obj.get_config()
     try:
-        experiment_name     = config_raw['name']
-        seed                = config_raw['manual_seed']
-        dataset_config      = config_parser_obj.get_dataset_config()
+        experiment_name              = config_raw['name']
+        seed                         = config_raw['manual_seed']
+        dataset_config               = config_parser_obj.get_dataset_config()
+        dataset_config['batch_size'] = 1
     except KeyError as e:
         logging.error(f"KeyError: {e} not found in config file.")
     except Exception as e:
@@ -52,15 +53,31 @@ def test_model():
     metrics_fn_dict        = get_metric_fn(config_parser_obj.get_metric_functions())
     logging.info(f"Selected metrics: {metrics_fn_dict.keys()}")
 
-    for i, (x, y) in enumerate(test_dataset):
+    test_results = {}
+
+    for i, (x, y) in enumerate(test_dataset.take(5)):
         y_pred = model(x)
         print(f'test {i+1}:')
         for metric_name, metric_fn in metrics_fn_dict.items():
             metric_value = metric_fn(y, y_pred)
+            if metric_name not in test_results.keys():
+                test_results[metric_name] = 0
+            test_results[metric_name] += metric_value
             print(f"{metric_name}: {metric_value}")
-    # x = tf.random.normal((1, 256, 128, 3))
-    # y = model(x, training=False)
-    # logging.info(f"Model output shape: {y.shape}")
+        if save_results:
+            x, y, y_pred = tf.squeeze(x), tf.squeeze(y), tf.squeeze(y_pred)
+            combined_image = tf.concat([x, y, y_pred], axis=1)
+            tf.keras.preprocessing.image.save_img(f"outputs/test_{i+1}.png", combined_image)
+    test_results["count"] = i+1
+
+    # Average the metrics
+    for metric_name in test_results.keys():
+        test_results[metric_name] /= test_results["count"]
+    test_results.pop("count")
+    
+    logging.info(f"Average test results:")
+    for metric_name, metric_value in test_results.items():
+        logging.info(f"{metric_name}: {metric_value}")
 
 if __name__ == "__main__":
-    test_model()
+    test_model(save_results=True)
